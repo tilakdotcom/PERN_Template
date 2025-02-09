@@ -4,7 +4,8 @@ import dbConnect from "./database/db/dbConnect";
 
 const PORT = PORT_ || 5000;
 
-dbConnect()
+dbConnect
+  .connect()
   .then(() => {
     console.log("Database connected successfully");
     app.listen(PORT),
