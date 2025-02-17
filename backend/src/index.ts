@@ -1,11 +1,11 @@
 import { app } from "./app";
 import { PORT as PORT_ } from "./constants/getEnv";
-import dbConnect from "./database/db/dbConnect";
+import prisma from "./database/dbConnect";
 
 const PORT = PORT_ || 5000;
 
-dbConnect
-  .connect()
+prisma
+  .$connect()
   .then(() => {
     console.log("Database connected successfully");
     app.listen(PORT),

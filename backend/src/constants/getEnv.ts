@@ -31,11 +31,6 @@ export const CLOUDINARY_API_SECRET= getEnv("CLOUDINARY_API_SECRET");
 export const MAILTRAP_TOKEN=getEnv("MAILTRAP_TOKEN");
 export const USER_EMAIL= getEnv("USER_EMAIL")
 
-export const DB_PORT = getEnv("DB_PORT");
-export const DB_USER= getEnv("DB_USER");
-export const PASSWORD= getEnv("PASSWORD")
-export const DB_HOST = getEnv("DB_HOST");
-export const DB_NAME = getEnv("DB_NAME");
 
 
 
