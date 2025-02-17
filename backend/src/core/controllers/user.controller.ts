@@ -1,9 +1,10 @@
 import appAssert from "../../common/API/AppAssert";
+import { emailSchema } from "../../common/schemas/auth";
 import { idSchema } from "../../common/schemas/user";
 import { BAD_REQUEST, OK } from "../../constants/http";
 import asyncHandler from "../../middlewares/asyncHandler.middleware";
 import { validateFileImage } from "../../middlewares/file.middleware";
-import { userAvatarService, userVerifyEmailRequestService, userVerifyEmailService } from "../services/user.service";
+import { userAvatarService, userPasswordResetRequestService, userVerifyEmailRequestService, userVerifyEmailService } from "../services/user.service";
 
 
 export const userAccessHandler = asyncHandler(async(req, res)=>{
@@ -30,15 +31,15 @@ export const userProfileImageHandler = asyncHandler(async (req, res) => {
   });
 });
 
-// export const userResetPasswordHandler = asyncHandler(async (req, res) => {
-//   const email = emailSchema.parse(req.body.email);
+export const userResetPasswordHandler = asyncHandler(async (req, res) => {
+  const email = emailSchema.parse(req.body.email);
 
-//   await userPasswordResetRequestService({ email });
+  await userPasswordResetRequestService({ email });
 
-//   return res.status(OK).json({
-//     message: "Password reset email sent successfully ",
-//   });
-// });
+  return res.status(OK).json({
+    message: "Password reset email sent successfully ",
+  });
+});
 
 // export const userPasswordChangeHandler = asyncHandler(async (req, res) => {
 //   const body = passwordChangeSchema.parse({

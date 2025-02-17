@@ -6,7 +6,7 @@ import { verificationType } from "@prisma/client";
 import ApiError from "../../common/API/ApiError";
 import { fifteenMinuteFromNow, Now } from "../../common/utils/customTime";
 import { CLIENT_URI } from "../../constants/getEnv";
-import { sendVerificationEmail } from "../../mail/mailer";
+import { sendForgotPasswordEmail, sendVerificationEmail } from "../../mail/mailer";
 
 type UserAvatar = {
   avatar: string;
@@ -32,41 +32,55 @@ export const userAvatarService = async (data: UserAvatar) => {
   return { user: rest };
 };
 
-// type UserPasswordResetRequestType = {
-//   email: string;
-// };
+type UserPasswordResetRequestType = {
+  email: string;
+};
 
-// export const userPasswordResetRequestService = async (
-//   data: UserPasswordResetRequestType
-// ) => {
-//   const user = await User.findOne({ email: data.email });
-//   appAssert(user, BAD_REQUEST, "user not found");
+export const userPasswordResetRequestService = async (
+  data: UserPasswordResetRequestType
+) => {
+  const user = await prisma.user.findFirst({
+    where: { email: data.email }
+  });
 
-//   const count = await VerifyCation.countDocuments({
-//     userId: user._id,
-//     expiresAt: {
-//       $gte: Now(),
-//     },
-//   });
-//   if (count > 2) {
-//     throw new ApiError(
-//       BAD_REQUEST,
-//       "You have exceeded the maximum number of documents"
-//     );
-//   }
 
-//   const passwordResetVerificationCode = await VerifyCation.create({
-//     userId: user._id,
-//     type: verificationCode.PASSWORD_RESET,
-//     expiresAt: fifteenMinuteFromNow(),
-//   });
+  appAssert(user, BAD_REQUEST, "user not found");
 
-//   const url = `${CLIENT_URI}/reset-password/${passwordResetVerificationCode._id}`;
+  const count = await prisma.verification.count({
+    where: {
+      userId: user.id,
+      type: verificationType.RESET_PASSWORD,
+      expiresAt: {
+        gte: Now(),
+      },
+    },
+  });
 
-//   sendForgotPasswordEmail(data.email, url);
+  if (count > 2) {
+    throw new ApiError(
+      BAD_REQUEST,
+      "You have exceeded the maximum number of documents"
+    );
+  }
 
-//   return { passwordResetVerificationCode };
-// };
+  const passwordResetVerificationCode = await prisma.verification.create({
+    data: {
+      userId: user.id,
+      type: verificationType.RESET_PASSWORD,
+      expiresAt: fifteenMinuteFromNow(),
+    }
+  });
+
+
+
+  const url = `${CLIENT_URI}/reset-password/${passwordResetVerificationCode.id}`;
+
+  sendForgotPasswordEmail(data.email, url);
+
+  return { passwordResetVerificationCode };
+};
+
+
 
 // type UserPasswordChangeServiceType = {
 //   newPassword: string;
