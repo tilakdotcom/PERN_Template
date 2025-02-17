@@ -1,16 +1,17 @@
 import appAssert from "../../common/API/AppAssert";
-import { emailSchema } from "../../common/schemas/auth";
-import { mongoIdSchema, passwordChangeSchema } from "../../common/schemas/user";
 import { BAD_REQUEST, OK } from "../../constants/http";
 import asyncHandler from "../../middlewares/asyncHandler.middleware";
 import { validateFileImage } from "../../middlewares/file.middleware";
-import {
-  userAvatarService,
-  userPasswordChangeService,
-  userPasswordResetRequestService,
-  userVerifyEmailRequestService,
-  userVerifyEmailService,
-} from "../services/user.service";
+import { userAvatarService } from "../services/user.service";
+
+
+export const userAccessHandler = asyncHandler(async(req, res)=>{
+  return res.status(OK).json({
+    message: "User authenticated successfully",
+    user: req.userId,
+  })
+})
+
 
 export const userProfileImageHandler = asyncHandler(async (req, res) => {
   const userId = req.userId;
@@ -28,51 +29,51 @@ export const userProfileImageHandler = asyncHandler(async (req, res) => {
   });
 });
 
-export const userResetPasswordHandler = asyncHandler(async (req, res) => {
-  const email = emailSchema.parse(req.body.email);
+// export const userResetPasswordHandler = asyncHandler(async (req, res) => {
+//   const email = emailSchema.parse(req.body.email);
 
-  await userPasswordResetRequestService({ email });
+//   await userPasswordResetRequestService({ email });
 
-  return res.status(OK).json({
-    message: "Password reset email sent successfully ",
-  });
-});
+//   return res.status(OK).json({
+//     message: "Password reset email sent successfully ",
+//   });
+// });
 
-export const userPasswordChangeHandler = asyncHandler(async (req, res) => {
-  const body = passwordChangeSchema.parse({
-    ...req.body,
-    token: req.params.token,
-  });
+// export const userPasswordChangeHandler = asyncHandler(async (req, res) => {
+//   const body = passwordChangeSchema.parse({
+//     ...req.body,
+//     token: req.params.token,
+//   });
 
-  const { user } = await userPasswordChangeService({
-    newPassword: body.newPassword,
-    passwordResetToken: body.token,
-  });
+//   const { user } = await userPasswordChangeService({
+//     newPassword: body.newPassword,
+//     passwordResetToken: body.token,
+//   });
 
-  return res.status(OK).json({
-    message: "Password reset successfully",
-    data: user,
-  });
-});
+//   return res.status(OK).json({
+//     message: "Password reset successfully",
+//     data: user,
+//   });
+// });
 
-export const userVerifyEmailRequestHandler = asyncHandler(async (req, res) => {
-  const userId = req.userId;
+// export const userVerifyEmailRequestHandler = asyncHandler(async (req, res) => {
+//   const userId = req.userId;
 
-  const { verification } = await userVerifyEmailRequestService(
-    userId as string
-  );
+//   const { verification } = await userVerifyEmailRequestService(
+//     userId as string
+//   );
 
-  return res.status(OK).json({
-    message: "email verification successfully send",
-    data: verification._id as string,
-  });
-});
+//   return res.status(OK).json({
+//     message: "email verification successfully send",
+//     data: verification._id as string,
+//   });
+// });
 
-export const userVerifyEmailHandler = asyncHandler(async (req, res) => {
-  const verificationId = mongoIdSchema.parse(req.params.verificationId);
-  const { user } = await userVerifyEmailService(verificationId);
-  return res.status(OK).json({
-    message: "user verified successfully",
-    data: user,
-  });
-});
+// export const userVerifyEmailHandler = asyncHandler(async (req, res) => {
+//   const verificationId = mongoIdSchema.parse(req.params.verificationId);
+//   const { user } = await userVerifyEmailService(verificationId);
+//   return res.status(OK).json({
+//     message: "user verified successfully",
+//     data: user,
+//   });
+// });
