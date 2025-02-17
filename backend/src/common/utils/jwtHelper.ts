@@ -3,19 +3,16 @@ import {
   ACCESS_TOKEN_SECRET,
   REFRESH_TOKEN_SECRET,
 } from "../../constants/getEnv";
-import { userDocument } from "../../database/models/user.model";
 import ApiError from "../API/ApiError";
 import { INTERNAL_SERVER_ERROR } from "../../constants/http";
-import { SessionDocument } from "../../database/models/session.model";
-
 type AccessTokenParams = {
-  userId: userDocument["_id"];
-  sessionId?: SessionDocument["_id"]
+  userId: string;
+  sessionId?: string
 };
 
 type RefreshTokenParams = {
-  userId: userDocument["_id"];
-  sessionId?: SessionDocument["_id"]
+  userId: string;
+  sessionId?: string
 };
 
 type SignOptionsWithSecret = SignOptions & {

@@ -10,7 +10,7 @@ import { BAD_REQUEST, CREATED, OK, UNAUTHORIZED } from "../../constants/http";
 import asyncHandler from "../../middlewares/asyncHandler.middleware";
 import {
   createUserService,
-  // loginUserService,
+  loginUserService,
   // refreshTokenService,
 } from "../services/auth.service";
 
@@ -26,23 +26,23 @@ export const signup = asyncHandler(async (req, res) => {
   });
 });
 
-// //login
-// export const login = asyncHandler(async (req, res) => {
-//   const userAgent = req.headers["user-agent"]
-//   const body = loginSchema.parse({
-//     ...req.body,
-//     userAgent: userAgent,
-//   });
+//login
+export const login = asyncHandler(async (req, res) => {
+  const userAgent = req.headers["user-agent"]
+  const body = loginSchema.parse({
+    ...req.body,
+    userAgent: userAgent,
+  });
 
-//   const { accessToken, refreshToken, user } = await loginUserService(body);
+  const { accessToken, refreshToken, user } = await loginUserService(body);
 
-//   const cooki = setAuthCookies({ res, accessToken, refreshToken });
+  const cooki = setAuthCookies({ res, accessToken, refreshToken });
 
-//   return cooki.status(OK).json({
-//     message: "Logged in successfully",
-//     data: user,
-//   });
-// });
+  return cooki.status(OK).json({
+    message: "Logged in successfully",
+    data: user,
+  });
+});
 
 // //logout
 // export const logout = asyncHandler(async (req, res) => {

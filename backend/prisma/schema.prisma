@@ -25,7 +25,8 @@ model Session {
   expiresAt    DateTime @default(now())
   userId       String
   user         User     @relation(fields: [userId], references: [id])
-  refreshToken String
+  userAgent String?
+  refreshToken String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @default(now()) @updatedAt
 }
