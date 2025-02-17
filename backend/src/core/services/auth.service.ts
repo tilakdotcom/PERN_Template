@@ -104,38 +104,40 @@ export const loginUserService = async (data: LoginUserData) => {
   };
 };
 
-// export const refreshTokenService = async (refreshToken: string) => {
-//   const userId = verifyToken({
-//     token: refreshToken,
-//     options: refreshTokenSignOptions,
-//   });
+export const refreshTokenService = async (refreshToken: string) => {
+  const userId = verifyToken({
+    token: refreshToken,
+    options: refreshTokenSignOptions,
+  });
 
-//   appAssert(userId.userId, UNAUTHORIZED, "invalid  refresh token");
+  appAssert(userId.userId, UNAUTHORIZED, "invalid  refresh token");
 
-//   const session = await Session.findOne({
-//     _id: userId.sessionId,
-//     refreshToken: refreshToken,
-//     expiresAt: {
-//       $gte: Now(),
-//     },
-//   });
+  const session = await prisma.session.findFirst({
+    where: {
+      id: userId.sessionId,
+      refreshToken: refreshToken,
+      expiresAt: {
+        gte: Now()
+      },
+    },
+  })
 
-//   appAssert(
-//     session && session.refreshToken === refreshToken,
-//     UNAUTHORIZED,
-//     "session not found  in the database or refresh token is invalid"
-//   );
+  appAssert(
+    session && session.refreshToken === refreshToken,
+    UNAUTHORIZED,
+    "session not found  in the database or refresh token is invalid"
+  );
 
-//   const accessToken = generateToken(
-//     {
-//       userId: session.userId,
-//       sessionId: session._id,
-//     },
-//     accessTokenSignOptions
-//   );
+  const accessToken = generateToken(
+    {
+      userId: session.userId,
+      sessionId: session.id,
+    },
+    accessTokenSignOptions
+  );
 
-//   return {
-//     accessToken,
-//     session,
-//   };
-// };
+  return {
+    accessToken,
+    session,
+  };
+};

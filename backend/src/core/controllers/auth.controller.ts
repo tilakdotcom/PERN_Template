@@ -12,7 +12,7 @@ import asyncHandler from "../../middlewares/asyncHandler.middleware";
 import {
   createUserService,
   loginUserService,
-  // refreshTokenService,
+  refreshTokenService,
 } from "../services/auth.service";
 
 //signup
@@ -60,12 +60,12 @@ export const logout = asyncHandler(async (req, res) => {
   });
 });
 
-// export const accessTokenRefresh = asyncHandler(async (req, res) => {
-//   const refreshToken = req.cookies.refreshToken;
-//   appAssert(refreshToken, UNAUTHORIZED, "Refresh token  not found");
-//   // userId
-//   const { accessToken } = await refreshTokenService(refreshToken);
-//   return setAccessTokenCookie({ res, accessToken }).status(OK).json({
-//     message: "Access token refreshed successfully",
-//   });
-// });
+export const accessTokenRefresh = asyncHandler(async (req, res) => {
+  const refreshToken = req.cookies.refreshToken;
+  appAssert(refreshToken, UNAUTHORIZED, "Refresh token  not found");
+  // userId
+  const { accessToken } = await refreshTokenService(refreshToken);
+  return setAccessTokenCookie({ res, accessToken }).status(OK).json({
+    message: "Access token refreshed successfully",
+  });
+});
