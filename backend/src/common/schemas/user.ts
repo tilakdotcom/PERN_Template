@@ -23,9 +23,9 @@ export const imageSchema = z.object({
   path: z.string(),
 });
 
-export const mongoIdSchema = z.string().min(4);
+export const idSchema = z.string().min(4);
 
 export const passwordChangeSchema = z.object({
   newPassword: passwordSchema,
-  token: mongoIdSchema,
+  token: idSchema,
 });

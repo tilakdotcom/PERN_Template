@@ -4,7 +4,7 @@ import uploadFileToCloudinary from "../../common/utils/cloudinary";
 import prisma from "../../database/dbConnect";
 import { verificationType } from "@prisma/client";
 import ApiError from "../../common/API/ApiError";
-import { fifteenMinuteFromNow } from "../../common/utils/customTime";
+import { fifteenMinuteFromNow, Now } from "../../common/utils/customTime";
 import { CLIENT_URI } from "../../constants/getEnv";
 import { sendVerificationEmail } from "../../mail/mailer";
 
@@ -133,32 +133,40 @@ export const userVerifyEmailRequestService = async (userId: string) => {
   // sent email
   const url = `${CLIENT_URI}/reset-password/${verification.id}`;
 
-
   sendVerificationEmail(user.email, url);
-  
+
   return {
     verification,
   };
 };
 
-// export const userVerifyEmailService = async (id: string) => {
-//   const verification = await VerifyCation.findOne({
-//     _id: id,
-//     expiresAt: { $gte: Now() },
-//   });
-//   appAssert(verification, BAD_REQUEST, "Token has expired");
+export const userVerifyEmailService = async (id: string) => {
+  const verification = await prisma.verification.findFirst({
+    where: {
+      id: id,
+      expiresAt: { gte: Now() },
+    },
+  });
+  appAssert(verification, BAD_REQUEST, "Token has expired");
 
-//   const user = await User.findOne({ _id: verification.userId });
-//   appAssert(user, BAD_REQUEST, "Token has expired");
+  const user = await prisma.user.findFirst({
+    where: {
+      id: verification.userId,
+    }
+  });
 
-//   user.verifiedEmail = true;
-//   await user.save({ validateBeforeSave: false });
+  appAssert(user, BAD_REQUEST, "Token has expired");
 
-//   //deleting the verification
-//   await VerifyCation.deleteMany({
-//     userId: user._id,
-//     type: verificationCode.VERIFICATION_EMAIL,
-//   });
+  const updateUser = await prisma.user.update({
+    where: { id: user.id },
+    data: { verifiedEmail: true },
+  })
+  const { password,...rest } = updateUser;
+  //deleting the verification
 
-//   return { user: user.publicUser() };
-// };
+  await prisma.verification.deleteMany({
+    where: { userId: user.id, type: verificationType.EMAIL_VERIFICATION },
+  });
+
+  return { user: rest};
+};

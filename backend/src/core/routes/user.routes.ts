@@ -1,6 +1,6 @@
 import { Router } from "express";
 import verifyUser from "../../middlewares/auth.middleware";
-import { userAccessHandler, userProfileImageHandler, userVerifyEmailRequestHandler } from "../controllers/user.controller";
+import { userAccessHandler, userProfileImageHandler, userVerifyEmailHandler, userVerifyEmailRequestHandler } from "../controllers/user.controller";
 import upload from "../../middlewares/multer.middleware";
 
 const router = Router()
@@ -19,7 +19,7 @@ router.route("/profile").patch(upload.single("avatar"),userProfileImageHandler)
 
 router.route("/verify-email-request").get(userVerifyEmailRequestHandler)
 
-// router.route("/verify-email").patch(userVerifyEmailHandler)
+router.route("/verify-email").patch(userVerifyEmailHandler)
 
 
 export default router
