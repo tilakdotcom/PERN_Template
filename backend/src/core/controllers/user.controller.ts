@@ -2,7 +2,7 @@ import appAssert from "../../common/API/AppAssert";
 import { BAD_REQUEST, OK } from "../../constants/http";
 import asyncHandler from "../../middlewares/asyncHandler.middleware";
 import { validateFileImage } from "../../middlewares/file.middleware";
-import { userAvatarService } from "../services/user.service";
+import { userAvatarService, userVerifyEmailRequestService } from "../services/user.service";
 
 
 export const userAccessHandler = asyncHandler(async(req, res)=>{
@@ -56,18 +56,18 @@ export const userProfileImageHandler = asyncHandler(async (req, res) => {
 //   });
 // });
 
-// export const userVerifyEmailRequestHandler = asyncHandler(async (req, res) => {
-//   const userId = req.userId;
+export const userVerifyEmailRequestHandler = asyncHandler(async (req, res) => {
+  const userId = req.userId;
 
-//   const { verification } = await userVerifyEmailRequestService(
-//     userId as string
-//   );
+  const { verification } = await userVerifyEmailRequestService(
+    userId as string
+  );
 
-//   return res.status(OK).json({
-//     message: "email verification successfully send",
-//     data: verification._id as string,
-//   });
-// });
+  return res.status(OK).json({
+    message: "email verification successfully send",
+    data: verification.id as string,
+  });
+});
 
 // export const userVerifyEmailHandler = asyncHandler(async (req, res) => {
 //   const verificationId = mongoIdSchema.parse(req.params.verificationId);

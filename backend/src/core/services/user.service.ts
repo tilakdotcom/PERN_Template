@@ -1,9 +1,12 @@
 import appAssert from "../../common/API/AppAssert";
-import {
-  BAD_REQUEST,
-} from "../../constants/http";
+import { BAD_REQUEST } from "../../constants/http";
 import uploadFileToCloudinary from "../../common/utils/cloudinary";
 import prisma from "../../database/dbConnect";
+import { verificationType } from "@prisma/client";
+import ApiError from "../../common/API/ApiError";
+import { fifteenMinuteFromNow } from "../../common/utils/customTime";
+import { CLIENT_URI } from "../../constants/getEnv";
+import { sendVerificationEmail } from "../../mail/mailer";
 
 type UserAvatar = {
   avatar: string;
@@ -19,13 +22,12 @@ export const userAvatarService = async (data: UserAvatar) => {
 
   const avatar = await uploadFileToCloudinary(data.avatar);
 
-
-  const updateUserAvatar=  await prisma.user.update({
+  const updateUserAvatar = await prisma.user.update({
     where: { id: user.id },
     data: { avatar: avatar.secure_url },
-  })
+  });
 
-  const {password, ...rest} = updateUserAvatar
+  const { password, ...rest } = updateUserAvatar;
 
   return { user: rest };
 };
@@ -102,32 +104,42 @@ export const userAvatarService = async (data: UserAvatar) => {
 //   return { user };
 // };
 
-// export const userVerifyEmailRequestService = async (userId: string) => {
-//   const user = await User.findOne({ _id: userId });
-//   appAssert(user, BAD_REQUEST, "User not found");
+export const userVerifyEmailRequestService = async (userId: string) => {
+  const user = await prisma.user.findFirst({
+    where: { id: userId },
+  });
+  appAssert(user, BAD_REQUEST, "User not found");
 
-//   const count = await VerifyCation.countDocuments({ userId: userId });
+  const count = await prisma.verification.count({
+    where: { userId: userId, type: verificationType.EMAIL_VERIFICATION },
+    orderBy: { createdAt: "desc" },
+  });
 
-//   if (count >= 2) {
-//     throw new ApiError(
-//       BAD_REQUEST,
-//       "You have already reached the maximum number of limit try again laterr."
-//     );
-//   }
+  if (count >= 2) {
+    throw new ApiError(
+      BAD_REQUEST,
+      "You have already reached the maximum number of limit try again laterr."
+    );
+  }
 
-//   const verification = await VerifyCation.create({
-//     userId: userId,
-//     expiresAt: fifteenMinuteFromNow(),
-//     type: verificationCode.VERIFICATION_EMAIL,
-//   });
+  const verification = await prisma.verification.create({
+    data: {
+      userId: userId,
+      expiresAt: fifteenMinuteFromNow(),
+      type: verificationType.EMAIL_VERIFICATION,
+    },
+  });
 
-//   // sent email
-//   const url = `${CLIENT_URI}/reset-password/${verification._id}`;
-//   sendVerificationEmail(user.email, url);
-//   return {
-//     verification,
-//   };
-// };
+  // sent email
+  const url = `${CLIENT_URI}/reset-password/${verification.id}`;
+
+
+  sendVerificationEmail(user.email, url);
+  
+  return {
+    verification,
+  };
+};
 
 // export const userVerifyEmailService = async (id: string) => {
 //   const verification = await VerifyCation.findOne({
