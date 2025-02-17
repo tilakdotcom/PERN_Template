@@ -88,7 +88,7 @@ const UserSection = () => {
   return (
     <div className="bg-gray-700 p-8 rounded-lg shadow-md">
       <h1 className="text-4xl font-bold text-center py-6">
-        Welcome, {user?.data.user || "Guest"}
+        Welcome, {user?.data.username || "Guest"}
       </h1>
       <div className="py-5 text-center">
         {user?.data.verifiedEmail ? (
@@ -154,7 +154,7 @@ const SessionsList = () => {
                   <button
                     disabled={isPending}
                     className="text-red-500 font-bold hover:text-red-700 transition"
-                    onClick={() => deleteSession(session._id)}
+                    onClick={() => deleteSession(session.id)}
                   >
                     Delete
                   </button>

@@ -1,5 +1,5 @@
 export interface TSession {
-  _id: string;
+  id: string;
   userAgent: string;
   createdAt: string;
   isCurrect?:string;
