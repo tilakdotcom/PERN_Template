@@ -1,4 +1,0 @@
-export const enum verificationType {
-  EMAIL_VERIFICATION="EMAIL_VERIFICATION",
-  RESET_PASSWORD="RESET_PASSWORD"
-}

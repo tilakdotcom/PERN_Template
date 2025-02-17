@@ -1,12 +1,16 @@
 import appAssert from "../../common/API/AppAssert";
-import { BAD_REQUEST } from "../../constants/http";
+import { BAD_REQUEST, INTERNAL_SERVER_ERROR } from "../../constants/http";
 import uploadFileToCloudinary from "../../common/utils/cloudinary";
 import prisma from "../../database/dbConnect";
 import { verificationType } from "@prisma/client";
 import ApiError from "../../common/API/ApiError";
 import { fifteenMinuteFromNow, Now } from "../../common/utils/customTime";
 import { CLIENT_URI } from "../../constants/getEnv";
-import { sendForgotPasswordEmail, sendVerificationEmail } from "../../mail/mailer";
+import {
+  sendForgotPasswordEmail,
+  sendVerificationEmail,
+} from "../../mail/mailer";
+import { passwordHasher } from "../../common/utils/bcryptjs";
 
 type UserAvatar = {
   avatar: string;
@@ -40,9 +44,8 @@ export const userPasswordResetRequestService = async (
   data: UserPasswordResetRequestType
 ) => {
   const user = await prisma.user.findFirst({
-    where: { email: data.email }
+    where: { email: data.email },
   });
-
 
   appAssert(user, BAD_REQUEST, "user not found");
 
@@ -68,10 +71,8 @@ export const userPasswordResetRequestService = async (
       userId: user.id,
       type: verificationType.RESET_PASSWORD,
       expiresAt: fifteenMinuteFromNow(),
-    }
+    },
   });
-
-
 
   const url = `${CLIENT_URI}/reset-password/${passwordResetVerificationCode.id}`;
 
@@ -80,43 +81,53 @@ export const userPasswordResetRequestService = async (
   return { passwordResetVerificationCode };
 };
 
+type UserPasswordChangeServiceType = {
+  newPassword: string;
+  passwordResetToken: string;
+};
 
+export const userPasswordChangeService = async (
+  data: UserPasswordChangeServiceType
+) => {
+  const verification = await prisma.verification.findFirst({
+    where: {
+      id: data.passwordResetToken,
+      type: verificationType.RESET_PASSWORD,
+      expiresAt: {
+        gte: Now(),
+      },
+    },
+  });
+  appAssert(verification, BAD_REQUEST, "reset password token has expired");
 
-// type UserPasswordChangeServiceType = {
-//   newPassword: string;
-//   passwordResetToken: string;
-// };
+  const user = await prisma.user.findFirst({
+    where: { id: verification.userId },
+  });
+  appAssert(user, INTERNAL_SERVER_ERROR, "reset password failed");
 
-// export const userPasswordChangeService = async (
-//   data: UserPasswordChangeServiceType
-// ) => {
-//   const verification = await VerifyCation.findOne({
-//     _id: data.passwordResetToken,
-//     type: verificationCode.PASSWORD_RESET,
-//     expiresAt: {
-//       $gte: Now(),
-//     },
-//   });
-//   appAssert(verification, BAD_REQUEST, "reset password has expired");
+  const hashedPassword = await passwordHasher(data.newPassword);
 
-//   const user = await User.findOne({ _id: verification.userId });
-//   appAssert(user, INTERNAL_SERVER_ERROR, "reset password failed");
+  const updateUserPaword = await prisma.user.update({
+    where: { id: user.id },
+    data: { password: hashedPassword },
+  });
 
-//   const hashedPassword = await passwordHasher(data.newPassword);
+  //delete old sessions
+  await prisma.session.deleteMany({
+    where: { userId: user.id },
+  });
 
-//   user.password = hashedPassword;
-//   await user.save({ validateBeforeSave: false });
+  await prisma.verification.deleteMany({
+    where: {
+      userId: user.id,
+      type: verificationType.RESET_PASSWORD,
+    },
+  });
 
-//   //delete old sessions
-//   await Session.deleteMany({ userId: user._id });
+  const { password, ...rest } = updateUserPaword;
 
-//   await VerifyCation.deleteMany({
-//     userId: user._id,
-//     type: verificationCode.PASSWORD_RESET,
-//   });
-
-//   return { user };
-// };
+  return { user: rest };
+};
 
 export const userVerifyEmailRequestService = async (userId: string) => {
   const user = await prisma.user.findFirst({
@@ -166,7 +177,7 @@ export const userVerifyEmailService = async (id: string) => {
   const user = await prisma.user.findFirst({
     where: {
       id: verification.userId,
-    }
+    },
   });
 
   appAssert(user, BAD_REQUEST, "Token has expired");
@@ -174,13 +185,13 @@ export const userVerifyEmailService = async (id: string) => {
   const updateUser = await prisma.user.update({
     where: { id: user.id },
     data: { verifiedEmail: true },
-  })
-  const { password,...rest } = updateUser;
+  });
+  const { password, ...rest } = updateUser;
   //deleting the verification
 
   await prisma.verification.deleteMany({
     where: { userId: user.id, type: verificationType.EMAIL_VERIFICATION },
   });
 
-  return { user: rest};
+  return { user: rest };
 };
