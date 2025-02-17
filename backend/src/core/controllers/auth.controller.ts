@@ -6,6 +6,7 @@ import {
   setAuthCookies,
 } from "../../common/utils/cookie";
 import { BAD_REQUEST, CREATED, OK, UNAUTHORIZED } from "../../constants/http";
+import prisma from "../../database/dbConnect";
 
 import asyncHandler from "../../middlewares/asyncHandler.middleware";
 import {
@@ -44,20 +45,20 @@ export const login = asyncHandler(async (req, res) => {
   });
 });
 
-// //logout
-// export const logout = asyncHandler(async (req, res) => {
-//   const sessionId = req.sessionId;
+//logout
+export const logout = asyncHandler(async (req, res) => {
+  const sessionId = req.sessionId;
 
-//   const session = await Session.deleteOne({
-//     _id: sessionId,
-//   });
+  const session = await prisma.session.delete({
+    where: { id: sessionId },
+  })
 
-//   appAssert(session, BAD_REQUEST, "session not found  in the database");
+  appAssert(session, BAD_REQUEST, "session not found  in the database");
 
-//   return clearAuthCookie(res).status(OK).json({
-//     message: "Logged out successfully",
-//   });
-// });
+  return clearAuthCookie(res).status(OK).json({
+    message: "Logged out successfully",
+  });
+});
 
 // export const accessTokenRefresh = asyncHandler(async (req, res) => {
 //   const refreshToken = req.cookies.refreshToken;
