@@ -1,11 +1,11 @@
 export interface TUser {
-  avatar: null;
+  avatar: string;
   createdAt: string;
   email: string;
   updatedAt: string;
-  user: string;
+  username: string;
   verifiedEmail: boolean;
-  _id: string;
+  id: string;
 }
 
 export interface Data {

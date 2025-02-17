@@ -5,7 +5,7 @@ export function RouteForOnlyAuthenticated() {
   const { user } = useAuth();
   console.log("user", user)
 
-  if (!user?.data?.user) {
+  if (!user?.data.id) {
     return (
       <Navigate 
         to="/login" 
@@ -20,7 +20,7 @@ export function RouteForOnlyAuthenticated() {
 export const RouteForOnlyNotAuthenticated = () => {
   const { user } = useAuth();
 
-  if (user?.data?.user) {
+  if (user?.data?.id) {
     return <Navigate to="/dashboard" replace />;
   }
 

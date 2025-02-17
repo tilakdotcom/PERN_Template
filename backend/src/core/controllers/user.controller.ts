@@ -1,19 +1,31 @@
 import appAssert from "../../common/API/AppAssert";
 import { emailSchema } from "../../common/schemas/auth";
 import { idSchema, passwordChangeSchema } from "../../common/schemas/user";
-import { BAD_REQUEST, OK } from "../../constants/http";
+import { BAD_REQUEST, OK, UNAUTHORIZED } from "../../constants/http";
+import prisma from "../../database/dbConnect";
 import asyncHandler from "../../middlewares/asyncHandler.middleware";
 import { validateFileImage } from "../../middlewares/file.middleware";
-import { userAvatarService, userPasswordChangeService, userPasswordResetRequestService, userVerifyEmailRequestService, userVerifyEmailService } from "../services/user.service";
+import {
+  userAvatarService,
+  userPasswordChangeService,
+  userPasswordResetRequestService,
+  userVerifyEmailRequestService,
+  userVerifyEmailService,
+} from "../services/user.service";
 
+export const userAccessHandler = asyncHandler(async (req, res) => {
+  const user = await prisma.user.findFirst({
+    where: { id: req.userId },
+  });
+  appAssert(user, UNAUTHORIZED, "user not Authenticated");
 
-export const userAccessHandler = asyncHandler(async(req, res)=>{
+  const { password, ...rest } = user;
+
   return res.status(OK).json({
     message: "User authenticated successfully",
-    user: req.userId,
-  })
-})
-
+    data: rest,
+  });
+});
 
 export const userProfileImageHandler = asyncHandler(async (req, res) => {
   const userId = req.userId;
