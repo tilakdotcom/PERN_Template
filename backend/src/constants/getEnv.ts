@@ -6,9 +6,6 @@ const getEnv = (key:string, deFaultValue?:string):string =>{
   return value
 }
 
-//database
-export const MONGO_URI = getEnv("MONGO_URI");
-export const DATABASE_NAME = getEnv("DATABASE_NAME");
 export const PORT = getEnv("PORT","5000");
 export const NODE_ENV = getEnv("NODE_ENV","development");
 export const CLIENT_URI = getEnv("CLIENT_URI");
