@@ -1,5 +1,5 @@
 import mongoose, { Document, Schema } from "mongoose";
-import { verificationCode } from "../../common/enum/verificationCode";
+import { verificationCode } from "../../common/enum/verificationEnum";
 
 interface VerifyCationDocument extends Document {
   userId: mongoose.Types.ObjectId;

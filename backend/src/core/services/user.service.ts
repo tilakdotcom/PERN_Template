@@ -7,7 +7,7 @@ import {
 } from "../../constants/http";
 import uploadFileToCloudinary from "../../common/utils/cloudinary";
 import VerifyCation from "../../database/models/vaerifiacation.model";
-import { verificationCode } from "../../common/enum/verificationCode";
+import { verificationCode } from "../../common/enum/verificationEnum";
 import { fifteenMinuteFromNow, Now } from "../../common/utils/customTime";
 import { passwordHasher } from "../../common/utils/bcryptjs";
 import Session from "../../database/models/session.model";
