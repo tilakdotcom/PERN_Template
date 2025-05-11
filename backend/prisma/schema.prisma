@@ -18,7 +18,6 @@ model User {
   updatedAt     DateTime       @default(now()) @updatedAt
   Session       Session[]
   Verification  Verification[]
-  Orders   Order[]
 }
 
 model Session {
@@ -47,15 +46,3 @@ model Verification {
   updatedAt DateTime         @default(now()) @updatedAt
 }
 
-
-model Order {
-  id            String  @id @default(uuid())
-  userId        String
-  user          User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  paymentId     String?
-  orderItems    Json
-  totalAmount   Float
-  paymentMethod String
-  status        String   @default("PENDING")
-  createdAt     DateTime @default(now())
-}
