@@ -1,4 +1,4 @@
-import { imageSchema } from "../common/schema/auth.schema";
+import { imageSchema } from "../common/schemas/user";
 
 export const validateFileImage = (file: Express.Multer.File) => {
   const image = imageSchema.parse({

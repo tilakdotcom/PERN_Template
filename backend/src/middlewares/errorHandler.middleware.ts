@@ -1,8 +1,8 @@
 import { ErrorRequestHandler, Response } from "express";
-
+import { BAD_REQUEST, INTERNAL_SERVER_ERROR } from "../common/constants/http";
 import { z } from "zod";
-import { BAD_REQUEST, INTERNAL_SERVER_ERROR } from "../constants/httpCode";
-import ApiError from "../common/api/apiError";
+import ApiError from "../common/API/ApiError";
+
 const handleZodError = (res: Response, error: z.ZodError) => {
   const errors = error.issues.map((issue) => ({
     path: issue.path.join("."),
@@ -16,7 +16,6 @@ const handleZodError = (res: Response, error: z.ZodError) => {
   return res.status(BAD_REQUEST).json({
     message: errorMessage.join(", "),
     errors,
-    success: false,
   });
 };
 
@@ -25,7 +24,6 @@ const handleApiError = (res: Response, error: ApiError) => {
     statusCode: error.statusCode,
     message: error.message,
     errorCode: error.errorCode,
-    success: error.success,
   });
 };
 
@@ -42,7 +40,6 @@ const errorHandler: ErrorRequestHandler = (error, req, res, next) => {
     statusCode: INTERNAL_SERVER_ERROR,
     message: "Error occured",
     error,
-    success: false,
   });
 
   next();

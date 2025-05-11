@@ -1,19 +1,22 @@
 import { Router } from "express";
 import {
-  loginUser,
-  logoutUser,
-  registerUser,
+  login,
+  accessTokenRefresh,
+  logout,
+  signup,
+  loginWithGoogle,
 } from "../controllers/auth.controller";
-import upload from "../../middlewares/multer.middleware";
 import verifyUser from "../../middlewares/auth.middleware";
+import upload from "../../middlewares/multer.middleware";
 
 const router = Router();
 
-// routes
-router.route("/register").post(upload.single("avatar"), registerUser);
+router.route("/register").post(upload.single("avatar"), signup);
+router.route("/login").post(login);
+router.route("/refresh").get(accessTokenRefresh);
+router.route("/google-login").get(loginWithGoogle);
 
-router.route("/login").post(loginUser);
-
-router.route("/logout").get(verifyUser, logoutUser);
+router.use(verifyUser);
+router.route("/logout").get(logout);
 
 export default router;

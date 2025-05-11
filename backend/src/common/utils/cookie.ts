@@ -1,6 +1,6 @@
 import { CookieOptions, Response } from "express";
 import { fifteenMinuteFromNow, thirtyDaysFromNow } from "./customTime";
-import { NODE_ENV } from "../../constants/getEnv";
+import { NODE_ENV } from "../constants/getEnv";
 
 type setAuthParams = {
   res: Response;

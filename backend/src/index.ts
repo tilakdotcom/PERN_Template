@@ -1,12 +1,12 @@
 import { app } from "./app";
-import { PORT as PORT_ } from "./constants/getEnv";
+import { PORT as PORT_ } from "./common/constants/getEnv";
 import prisma from "./database/dbConnect";
 
 const PORT = PORT_ || 5000;
 
 prisma
-.$connect()
-.then(() => {
+  .$connect()
+  .then(() => {
     console.log("Database connected successfully");
     app.listen(PORT),
       () => {
@@ -18,7 +18,7 @@ prisma
       process.exit(1);
     });
   })
-  .catch((error:any) => {
+  .catch((error) => {
     console.error("Failed to connect to database", error);
     process.exit(1);
   });

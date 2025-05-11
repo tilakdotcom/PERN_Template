@@ -1,9 +1,9 @@
 import { NextFunction, Request, Response } from "express";
 import asyncHandler from "./asyncHandler.middleware";
-import ApiErrorCode from "../constants/apiErrorCode";
-import { verifyToken } from "../common/utils/jwtHelper"
-import appAssert from "./appAssert.middleware";
-import { UNAUTHORIZED } from "../constants/httpCode";
+import { UNAUTHORIZED } from "../common/constants/http";
+import ApiErrorCode from "../common/constants/apiErrorCode";
+import { verifyToken } from "../common/utils/jwtHelper";
+import appAssert from "../common/API/AppAssert";
 
 const verifyUser = asyncHandler(
   async (req: Request, _res: Response, next: NextFunction) => {

@@ -1,43 +1,45 @@
-import { passwordComparator, passwordHasher } from "../../common/utils/bcrypt";
-import uploadFileToCloudinary from "../../common/utils/cloudinary";
-import { thirtyDaysFromNow } from "../../common/utils/customTime";
+import appAssert from "../../common/API/AppAssert";
+import { passwordCompare, passwordHasher } from "../../common/utils/bcryptjs";
+import { Now, thirtyDaysFromNow } from "../../common/utils/customTime";
 import {
-  accessTokenSecret,
-  refreshTokenSecret,
-  signToken,
+  accessTokenSignOptions,
+  generateToken,
+  refreshTokenSignOptions,
+  verifyToken,
 } from "../../common/utils/jwtHelper";
-import { BAD_REQUEST } from "../../constants/httpCode";
+import { BAD_REQUEST, UNAUTHORIZED } from "../../common/constants/http";
 import prisma from "../../database/dbConnect";
-import appAssert from "../../middlewares/appAssert.middleware";
-import fs from "fs";
+import uploadFileToCloudinary from "../../common/utils/cloudinary";
+import oauthGoogle from "../../config/google";
+import { userInfoURL } from "../../common/constants/URL";
+import axios from "axios";
 
-type registerUserServiceProps = {
-  avatar: string;
+type CreateUserData = {
   email: string;
   password: string;
+  avatar?: string;
 };
 
-export const registerUserService = async (data: registerUserServiceProps) => {
-  //check if existing user
+export const createUserService = async (data: CreateUserData) => {
   const userExists = await prisma.user.findFirst({
     where: { email: data.email },
   });
 
-  if (userExists) {
-    fs.unlinkSync(data.avatar);
-  }
-
-  appAssert(!userExists, BAD_REQUEST, "user already exists ");
+  appAssert(!userExists, BAD_REQUEST, "user already exists");
 
   const hashedPassword = await passwordHasher(data.password);
 
-  const UploadedImage = await uploadFileToCloudinary(data.avatar);
+  let uploadedImage;
+
+  if (data.avatar) {
+    uploadedImage = await uploadFileToCloudinary(data.avatar);
+  }
 
   const user = await prisma.user.create({
     data: {
-      avatar: UploadedImage.secure_url,
       email: data.email,
       password: hashedPassword,
+      avatar: uploadedImage?.secure_url || "",
     },
   });
 
@@ -48,59 +50,182 @@ export const registerUserService = async (data: registerUserServiceProps) => {
   };
 };
 
-type loginUserServiceProps = {
+type LoginUserData = {
+  userAgent?: string;
   email: string;
   password: string;
-  userAgent?: string;
 };
-export const loginUserService = async (data: loginUserServiceProps) => {
-  const userExists = await prisma.user.findFirst({
+
+export const loginUserService = async (data: LoginUserData) => {
+  const user = await prisma.user.findFirst({
     where: { email: data.email },
   });
-  appAssert(userExists, BAD_REQUEST, "invaid user does not exist");
 
-  const isValid = await passwordComparator(data.password, userExists.password);
+  //validation
+  appAssert(user, BAD_REQUEST, "invalid login user details");
 
-  appAssert(isValid, BAD_REQUEST, "invalid password or user");
+  //password check
+  const isMatch = await passwordCompare(
+    data.password,
+    user.password ? user.password : ""
+  );
+  appAssert(isMatch, BAD_REQUEST, "invalid login user or password details");
 
   //create session
   const session = await prisma.session.create({
     data: {
-      userId: userExists.id,
-      userAgent: data.userAgent,
-    },
-  });
-
-  const accessToken = signToken(
-    {
-      userId: userExists.id,
-      sessionId: session.id,
-    },
-    accessTokenSecret
-  );
-
-  const refreshToken = signToken(
-    {
-      userId: userExists.id,
-      sessionId: session.id,
-    },
-    refreshTokenSecret
-  );
-
-  const updateSession = await prisma.session.update({
-    where: { id: session.id },
-    data: {
-      refreshToken,
+      userId: user.id,
       userAgent: data.userAgent,
       expiresAt: thirtyDaysFromNow(),
     },
   });
 
-  const { password, ...rest } = userExists;
+  //generate tokens
+
+  const refreshToken = generateToken(
+    {
+      userId: user.id,
+      sessionId: session.id,
+    },
+    refreshTokenSignOptions
+  );
+
+  const accessToken = generateToken(
+    {
+      userId: user.id,
+      sessionId: session.id,
+    },
+    accessTokenSignOptions
+  );
+  const updateSession = await prisma.session.update({
+    where: { id: session.id },
+    data: { refreshToken },
+  });
+
+  const { password, ...rest } = user;
+
   return {
+    user: rest,
     accessToken,
     refreshToken,
+    updateSession,
+  };
+};
+
+export const refreshTokenService = async (refreshToken: string) => {
+  const userId = verifyToken({
+    token: refreshToken,
+    options: refreshTokenSignOptions,
+  });
+
+  appAssert(userId.userId, UNAUTHORIZED, "invalid  refresh token");
+
+  const session = await prisma.session.findFirst({
+    where: {
+      id: userId.sessionId,
+      refreshToken: refreshToken,
+      expiresAt: {
+        gte: Now(),
+      },
+    },
+  });
+
+  appAssert(
+    session && session.refreshToken === refreshToken,
+    UNAUTHORIZED,
+    "session not found  in the database or refresh token is invalid"
+  );
+
+  const accessToken = generateToken(
+    {
+      userId: session.userId,
+      sessionId: session.id,
+    },
+    accessTokenSignOptions
+  );
+
+  return {
+    accessToken,
+    session,
+  };
+};
+
+type LoginWithGogleProps = {
+  code: string;
+  userAgent?: string;
+};
+
+export const loginWithGoogleService = async ({
+  code,
+  userAgent,
+}: LoginWithGogleProps) => {
+  const googleRes = await oauthGoogle.getToken(code);
+  oauthGoogle.setCredentials(googleRes.tokens);
+  appAssert(
+    googleRes.tokens?.access_token,
+    BAD_REQUEST,
+    "failed to get google res"
+  );
+  const userInfo = await axios.get(userInfoURL(googleRes.tokens?.access_token));
+  const { email, name, picture } = userInfo.data;
+  let user = await prisma.user.findFirst({
+    where: {
+      email,
+    },
+  });
+  if (!user) {
+    user = await prisma.user.create({
+      data: {
+        email,
+        password: null,
+        avatar: picture || "",
+        name,
+      },
+    });
+  }
+
+  //create session
+  const session = await prisma.session.create({
+    data: {
+      userId: user.id,
+      userAgent,
+      expiresAt: thirtyDaysFromNow(),
+    },
+  });
+
+  //generate tokens
+
+  const refreshToken = generateToken(
+    {
+      userId: user.id,
+      sessionId: session.id,
+    },
+    refreshTokenSignOptions
+  );
+
+  const accessToken = generateToken(
+    {
+      userId: user.id,
+      sessionId: session.id,
+    },
+    accessTokenSignOptions
+  );
+  const updateSession = await prisma.session.update({
+    where: { id: session.id },
+    data: { refreshToken },
+  });
+
+  const { password, ...rest } = user;
+  let isNew = false;
+  if (password === null) {
+    isNew = true;
+  }
+
+  return {
     user: rest,
-    session: updateSession,
+    accessToken,
+    refreshToken,
+    updateSession,
+    isNew,
   };
 };
