@@ -9,7 +9,6 @@ import { useEffect } from "react";
 import { checkAuth, setAuthenticated } from "./store/auth/authSlice";
 import { CheckAuth } from "./layout/CheckAuth";
 import UserPage from "./pages/user/UserPage";
-import RedirectPage from "./pages/common/GetLinkPage";
 import NotFound from "./pages/404/NotFoundPage";
 import GoogleAuth from "./components/common/GoogleAuth";
 
@@ -47,7 +46,6 @@ function App() {
           </Route>
         </Route>
 
-        <Route path="/u/:short" element={<RedirectPage />} />
         <Route path="*" element={<NotFound />} />
         <Route path="/google" element={<GoogleAuth />} />
       </Routes>
