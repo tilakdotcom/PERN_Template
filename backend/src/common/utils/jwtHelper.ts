@@ -3,45 +3,46 @@ import {
   ACCESS_TOKEN_SECRET,
   REFRESH_TOKEN_SECRET,
 } from "../../constants/getEnv";
-import ApiError from "../API/ApiError";
-import { INTERNAL_SERVER_ERROR } from "../../constants/http";
+import ApiError from "../api/apiError";
+import { INTERNAL_SERVER_ERROR } from "../../constants/httpCode";
+
 type AccessTokenParams = {
   userId: string;
-  sessionId?: string
+  sessionId?: string;
 };
 
 type RefreshTokenParams = {
   userId: string;
-  sessionId?: string
-};
-
-type SignOptionsWithSecret = SignOptions & {
-  secret: string;
+  sessionId?: string;
 };
 
 const defaultOptions: SignOptions = {
   audience: "user",
 };
 
-export const accessTokenSignOptions: SignOptionsWithSecret = {
-  expiresIn: "15m",
+type SignOtionsWithSecretKey = SignOptions & {
+  secret: string;
+};
+
+// access token secret
+export const accessTokenSecret: SignOtionsWithSecretKey = {
   secret: ACCESS_TOKEN_SECRET,
+  expiresIn: "50m",
+  ...defaultOptions,
 };
-
-export const refreshTokenSignOptions: SignOptionsWithSecret = {
-  expiresIn: "30d",
+// refresh token secret
+export const refreshTokenSecret: SignOtionsWithSecretKey = {
   secret: REFRESH_TOKEN_SECRET,
+  expiresIn: "7d",
+  ...defaultOptions,
 };
 
-export const generateToken = (
+export const signToken = (
   payload: AccessTokenParams | RefreshTokenParams,
-  options: SignOptionsWithSecret
+  options: SignOtionsWithSecretKey
 ) => {
-  const { secret, ...signOpts } = options;
-  return jwt.sign(payload, secret, {
-    ...defaultOptions,
-    ...signOpts,
-  });
+  const { secret, ...restOpts } = options;
+  return jwt.sign(payload, secret, restOpts);
 };
 
 type verifyOptionsWithSecret = VerifyOptions & {
@@ -55,7 +56,7 @@ type verifyTokenParams = {
 
 export const verifyToken = ({
   token,
-  options = accessTokenSignOptions,
+  options = accessTokenSecret,
 }: verifyTokenParams) => {
   const { secret, ...verifyOpts } = options || {};
 

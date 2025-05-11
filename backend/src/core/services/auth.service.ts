@@ -1,143 +1,106 @@
-import appAssert from "../../common/API/AppAssert";
-import { passwordCompare, passwordHasher } from "../../common/utils/bcryptjs";
-import { Now, thirtyDaysFromNow } from "../../common/utils/customTime";
+import { passwordComparator, passwordHasher } from "../../common/utils/bcrypt";
+import uploadFileToCloudinary from "../../common/utils/cloudinary";
+import { thirtyDaysFromNow } from "../../common/utils/customTime";
 import {
-  accessTokenSignOptions,
-  generateToken,
-  refreshTokenSignOptions,
-  verifyToken,
+  accessTokenSecret,
+  refreshTokenSecret,
+  signToken,
 } from "../../common/utils/jwtHelper";
-import { BAD_REQUEST, UNAUTHORIZED } from "../../constants/http";
+import { BAD_REQUEST } from "../../constants/httpCode";
 import prisma from "../../database/dbConnect";
+import appAssert from "../../middlewares/appAssert.middleware";
+import fs from "fs";
 
-import { sendWelcomeEmail } from "../../mail/mailer";
-
-type CreateUserData = {
+type registerUserServiceProps = {
+  avatar: string;
   email: string;
   password: string;
-  username: string;
 };
 
-export const createUserService = async (data: CreateUserData) => {
+export const registerUserService = async (data: registerUserServiceProps) => {
+  //check if existing user
   const userExists = await prisma.user.findFirst({
     where: { email: data.email },
-  })
+  });
 
-  appAssert(!userExists, BAD_REQUEST, "user already exists");
+  if (userExists) {
+    fs.unlinkSync(data.avatar);
+  }
 
-  const hashedPassword = await passwordHasher(data.password)
+  appAssert(!userExists, BAD_REQUEST, "user already exists ");
+
+  const hashedPassword = await passwordHasher(data.password);
+
+  const UploadedImage = await uploadFileToCloudinary(data.avatar);
 
   const user = await prisma.user.create({
     data: {
-      username: data.username,
+      avatar: UploadedImage.secure_url,
       email: data.email,
       password: hashedPassword,
-    }
-  })
-
-  // generate welcome email
-  sendWelcomeEmail(data.username, data.email);
-
-  const {password, ...rest} = user
-
-  return {
-    user:rest
-  };
-};
-
-type LoginUserData = {
-  userAgent?: string;
-  email: string;
-  password: string;
-};
-
-export const loginUserService = async (data: LoginUserData) => {
-  const user = await prisma.user.findFirst({
-    where: { email: data.email },
+    },
   });
 
-  //validation
-  appAssert(user, BAD_REQUEST, "invalid login user details");
-
-  //password check
-  const isMatch = await passwordCompare(data.password, user.password)
-  appAssert(isMatch, BAD_REQUEST, "invalid login user or password details");
-
-  //create session
-  const session = await prisma.session.create({
-   data: {
-     userId: user.id,
-     userAgent: data.userAgent,
-     expiresAt: thirtyDaysFromNow(),
-   },
-  });
-
-  //generate tokens
-
-  const refreshToken = generateToken(
-    {
-      userId: user.id,
-      sessionId: session.id,
-    },
-    refreshTokenSignOptions
-  );
-
-  const accessToken = generateToken(
-    {
-      userId: user.id,
-      sessionId: session.id,
-    },
-    accessTokenSignOptions
-  );
-  const updateSession = await prisma.session.update({
-    where: { id: session.id },
-    data: { refreshToken },
-  })
-
-  const {password, ...rest} = user
+  const { password, ...rest } = user;
 
   return {
     user: rest,
-    accessToken,
-    refreshToken,
-    updateSession,
   };
 };
 
-export const refreshTokenService = async (refreshToken: string) => {
-  const userId = verifyToken({
-    token: refreshToken,
-    options: refreshTokenSignOptions,
+type loginUserServiceProps = {
+  email: string;
+  password: string;
+  userAgent?: string;
+};
+export const loginUserService = async (data: loginUserServiceProps) => {
+  const userExists = await prisma.user.findFirst({
+    where: { email: data.email },
+  });
+  appAssert(userExists, BAD_REQUEST, "invaid user does not exist");
+
+  const isValid = await passwordComparator(data.password, userExists.password);
+
+  appAssert(isValid, BAD_REQUEST, "invalid password or user");
+
+  //create session
+  const session = await prisma.session.create({
+    data: {
+      userId: userExists.id,
+      userAgent: data.userAgent,
+    },
   });
 
-  appAssert(userId.userId, UNAUTHORIZED, "invalid  refresh token");
-
-  const session = await prisma.session.findFirst({
-    where: {
-      id: userId.sessionId,
-      refreshToken: refreshToken,
-      expiresAt: {
-        gte: Now()
-      },
-    },
-  })
-
-  appAssert(
-    session && session.refreshToken === refreshToken,
-    UNAUTHORIZED,
-    "session not found  in the database or refresh token is invalid"
-  );
-
-  const accessToken = generateToken(
+  const accessToken = signToken(
     {
-      userId: session.userId,
+      userId: userExists.id,
       sessionId: session.id,
     },
-    accessTokenSignOptions
+    accessTokenSecret
   );
 
+  const refreshToken = signToken(
+    {
+      userId: userExists.id,
+      sessionId: session.id,
+    },
+    refreshTokenSecret
+  );
+
+  const updateSession = await prisma.session.update({
+    where: { id: session.id },
+    data: {
+      refreshToken,
+      userAgent: data.userAgent,
+      expiresAt: thirtyDaysFromNow(),
+    },
+  });
+
+  const { password, ...rest } = userExists;
   return {
     accessToken,
-    session,
+    refreshToken,
+    user: rest,
+    session: updateSession,
   };
 };

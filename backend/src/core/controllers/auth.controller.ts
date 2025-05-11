@@ -1,52 +1,52 @@
-import appAssert from "../../common/API/AppAssert";
-import { loginSchema, registerSchema } from "../../common/schemas/auth";
 import {
-  clearAuthCookie,
-  setAccessTokenCookie,
-  setAuthCookies,
-} from "../../common/utils/cookie";
-import { BAD_REQUEST, CREATED, OK, UNAUTHORIZED } from "../../constants/http";
+  createUserSchema,
+  loginUserSchema,
+} from "../../common/schema/auth.schema";
+import { clearAuthCookie, setAuthCookies } from "../../common/utils/cookie";
+import { BAD_REQUEST, CREATED, OK } from "../../constants/httpCode";
 import prisma from "../../database/dbConnect";
-
+import appAssert from "../../middlewares/appAssert.middleware";
 import asyncHandler from "../../middlewares/asyncHandler.middleware";
+import { validateFileImage } from "../../middlewares/file.middleware";
 import {
-  createUserService,
   loginUserService,
-  refreshTokenService,
+  registerUserService,
 } from "../services/auth.service";
 
-//signup
-export const signup = asyncHandler(async (req, res) => {
-  const body = registerSchema.parse(req.body);
-  //using services
-  const { user } = await createUserService(body);
-
-  res.status(CREATED).json({
-    message: "user created successfully",
-    data: user,
+export const registerUser = asyncHandler(async (req, res) => {
+  const body = createUserSchema.parse(req.body);
+  const { path } = validateFileImage(req.file as Express.Multer.File);
+  const { user } = await registerUserService({
+    email: body.email,
+    password: body.password,
+    avatar: path,
   });
+  res
+    .status(CREATED)
+    .json({
+      message: "User registered successfully",
+      success: true,
+      data: user,
+    });
 });
 
-//login
-export const login = asyncHandler(async (req, res) => {
-  const userAgent = req.headers["user-agent"]
-  const body = loginSchema.parse({
+export const loginUser = asyncHandler(async (req, res) => {
+  const body = loginUserSchema.parse({
     ...req.body,
-    userAgent: userAgent,
+    userAgent: req.headers["user-agent"],
   });
 
   const { accessToken, refreshToken, user } = await loginUserService(body);
 
-  const cooki = setAuthCookies({ res, accessToken, refreshToken });
-
-  return cooki.status(OK).json({
-    message: "Logged in successfully",
+  return setAuthCookies({ res, accessToken, refreshToken }).status(OK).json({
+    message: "User logged in successfully",
+    success: true,
     data: user,
   });
 });
 
 //logout
-export const logout = asyncHandler(async (req, res) => {
+export const logoutUser = asyncHandler(async (req, res) => {
   const sessionId = req.sessionId;
 
   const session = await prisma.session.delete({
@@ -56,16 +56,7 @@ export const logout = asyncHandler(async (req, res) => {
   appAssert(session, BAD_REQUEST, "session not found  in the database");
 
   return clearAuthCookie(res).status(OK).json({
+    success: true,
     message: "Logged out successfully",
-  });
-});
-
-export const accessTokenRefresh = asyncHandler(async (req, res) => {
-  const refreshToken = req.cookies.refreshToken;
-  appAssert(refreshToken, UNAUTHORIZED, "Refresh token  not found");
-  // userId
-  const { accessToken } = await refreshTokenService(refreshToken);
-  return setAccessTokenCookie({ res, accessToken }).status(OK).json({
-    message: "Access token refreshed successfully",
   });
 });

@@ -1,19 +1,19 @@
 import { Router } from "express";
 import {
-  login,
-  accessTokenRefresh,
-  logout,
-  signup,
+  loginUser,
+  logoutUser,
+  registerUser,
 } from "../controllers/auth.controller";
+import upload from "../../middlewares/multer.middleware";
 import verifyUser from "../../middlewares/auth.middleware";
 
 const router = Router();
 
-router.route("/register").post(signup);
-router.route("/login").post(login);
-router.route("/refresh").get(accessTokenRefresh);
+// routes
+router.route("/register").post(upload.single("avatar"), registerUser);
 
-router.use(verifyUser);
-router.route("/logout").get(logout);
+router.route("/login").post(loginUser);
+
+router.route("/logout").get(verifyUser, logoutUser);
 
 export default router;

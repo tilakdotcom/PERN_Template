@@ -1,10 +1,11 @@
-import ApiErrorCode from "../../constants/apiErrorCode";
-import { HttpStatusCode } from "../../constants/http";
-import ApiError from "./ApiError";
 
 /**
  * Assert a condition and throw an error if it is false.
  */
+
+import ApiError from "../common/api/apiError";
+import ApiErrorCode from "../constants/apiErrorCode";
+import { HttpStatusCode } from "../constants/httpCode";
 
 type AppAssert = (
   condition: unknown,

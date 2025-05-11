@@ -11,13 +11,14 @@ model User {
   id            String         @id @default(uuid())
   email         String         @unique
   password      String
-  username      String
+  username      String?
   verifiedEmail Boolean        @default(false)
   avatar        String?
   createAt      DateTime       @default(now())
   updatedAt     DateTime       @default(now()) @updatedAt
   Session       Session[]
   Verification  Verification[]
+  Orders   Order[]
 }
 
 model Session {
@@ -44,4 +45,17 @@ model Verification {
   expiresAt DateTime         @default(now())
   createdAt DateTime         @default(now())
   updatedAt DateTime         @default(now()) @updatedAt
+}
+
+
+model Order {
+  id            String  @id @default(uuid())
+  userId        String
+  user          User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  paymentId     String?
+  orderItems    Json
+  totalAmount   Float
+  paymentMethod String
+  status        String   @default("PENDING")
+  createdAt     DateTime @default(now())
 }

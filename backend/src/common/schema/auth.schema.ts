@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { passwordSchema } from "./auth";
 
 export const imageSchema = z.object({
   mimetype: z
@@ -23,9 +22,15 @@ export const imageSchema = z.object({
   path: z.string(),
 });
 
-export const idSchema = z.string().min(4);
 
-export const passwordChangeSchema = z.object({
-  newPassword: passwordSchema,
-  token: idSchema,
+export const createUserSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(5).max(255),
+});
+
+
+export const loginUserSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(6 , "invailt Password"),
+  userAgent: z.string().optional()
 });

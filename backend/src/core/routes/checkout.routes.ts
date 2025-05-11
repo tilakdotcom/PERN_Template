@@ -1,12 +1,17 @@
 import { Router } from "express";
 import verifyUser from "../../middlewares/auth.middleware";
-import { userAccessHandler } from "../controllers/user.controller";
+import { checkoutHandle } from "../controllers/checkout.controller";
 
 const router = Router()
 
 
 // routes
-router.route("/").get(verifyUser, userAccessHandler)
+
+
+router.use(verifyUser)
+
+
+router.route("/").post(checkoutHandle)
 
 
 
