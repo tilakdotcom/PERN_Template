@@ -21,13 +21,11 @@ export const registerUser = asyncHandler(async (req, res) => {
     password: body.password,
     avatar: path,
   });
-  res
-    .status(CREATED)
-    .json({
-      message: "User registered successfully",
-      success: true,
-      data: user,
-    });
+  res.status(CREATED).json({
+    message: "User registered successfully",
+    success: true,
+    data: user,
+  });
 });
 
 export const loginUser = asyncHandler(async (req, res) => {
@@ -51,7 +49,7 @@ export const logoutUser = asyncHandler(async (req, res) => {
 
   const session = await prisma.session.delete({
     where: { id: sessionId },
-  })
+  });
 
   appAssert(session, BAD_REQUEST, "session not found  in the database");
 
