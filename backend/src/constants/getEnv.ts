@@ -7,7 +7,6 @@ const getEnv = (key: string, deFaultValue?: string): string => {
 };
 
 //database
-export const DATABASE_NAME = getEnv("DATABASE_NAME");
 export const PORT = getEnv("PORT", "5000");
 export const NODE_ENV = getEnv("NODE_ENV", "development");
 export const CLIENT_URI = getEnv("CLIENT_URI");
